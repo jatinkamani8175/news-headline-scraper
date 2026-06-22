@@ -1,45 +1,42 @@
-import requests
-from bs4 import BeautifulSoup
+import feedparser
 from datetime import datetime
 
-def scrape_toi_headlines():
-    url = "https://timesofindia.indiatimes.com/home/headlines"
+
+def scrape_toi_rss():
+    rss_url = "https://timesofindia.indiatimes.com/rssfeedstopstories.cms"
 
     try:
-        # Step 1: Fetch HTML content
-        response = requests.get(url)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, "html.parser")
+        # Parse RSS feed
+        feed = feedparser.parse(rss_url)
 
-        # Step 2: Extract <h2> and <h3> headlines
-        headlines = set()
-
-        for tag in soup.find_all(["h2", "h3"]):
-            text = tag.get_text(strip=True)
-            if text:
-                headlines.add(text)  # Set ensures uniqueness
-
-        if not headlines:
-            print("⚠️ No <h2> or <h3> headlines found.")
+        if not feed.entries:
+            print("❌ No news articles found.")
             return
 
-        # Step 3: Prepare output file
+        # Create filename with current date
         date_str = datetime.now().strftime("%Y-%m-%d")
-        filename = f"toi_headlines_{date_str}.txt"
+        filename = f"toi_news_{date_str}.txt"
 
-        with open(filename, "a", encoding="utf-8") as f:
-            f.write(f"\n🗓️ TOI Headlines on {date_str} (h2 & h3)\n\n")
-            for i, headline in enumerate(sorted(headlines), 1):
-                f.write(f"{i}. {headline}\n")
-            f.write("\n" + "="*60 + "\n")
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(f"🗓️ TOI Top Stories - {date_str}\n")
+            f.write("=" * 80 + "\n\n")
 
-        print(f"✅ Saved {len(headlines)} headlines to '{filename}'")
+            for i, article in enumerate(feed.entries, start=1):
+                headline = article.get("title", "No Headline")
+                description = article.get("summary", "No Description")
+                link = article.get("link", "No Link")
 
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Network error: {e}")
+                f.write(f"News #{i}\n")
+                f.write(f"Headline    : {headline}\n")
+                f.write(f"Description : {description}\n")
+                f.write(f"Link        : {link}\n")
+                f.write("-" * 80 + "\n\n")
+
+        print(f"✅ Saved {len(feed.entries)} articles to '{filename}'")
+
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"❌ Error: {e}")
 
-# Execute when run directly
+
 if __name__ == "__main__":
-    scrape_toi_headlines()
+    scrape_toi_rss()
