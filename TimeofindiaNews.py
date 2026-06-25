@@ -1,42 +1,27 @@
-import feedparser
+import requests
+from bs4 import BeautifulSoup
 from datetime import datetime
 
+html_text = requests.get("https://timesofindia.indiatimes.com/").text
 
-def scrape_toi_rss():
-    rss_url = "https://timesofindia.indiatimes.com/rssfeedstopstories.cms"
+soup = BeautifulSoup(html_text,'lxml')
+news_headline = soup.find_all('div',class_ = 'Kt6Pm style_change T5Q6J')
 
-    try:
-        # Parse RSS feed
-        feed = feedparser.parse(rss_url)
+news_paragraph = soup.find_all('p',class_ = "hEoJ3")
 
-        if not feed.entries:
-            print("❌ No news articles found.")
-            return
-
-        # Create filename with current date
-        date_str = datetime.now().strftime("%Y-%m-%d")
-        filename = f"toi_news_{date_str}.txt"
-
-        with open(filename, "w", encoding="utf-8") as f:
-            f.write(f"🗓️ TOI Top Stories - {date_str}\n")
-            f.write("=" * 80 + "\n\n")
-
-            for i, article in enumerate(feed.entries, start=1):
-                headline = article.get("title", "No Headline")
-                description = article.get("summary", "No Description")
-                link = article.get("link", "No Link")
-
-                f.write(f"News #{i}\n")
-                f.write(f"Headline    : {headline}\n")
-                f.write(f"Description : {description}\n")
-                f.write(f"Link        : {link}\n")
-                f.write("-" * 80 + "\n\n")
-
-        print(f"✅ Saved {len(feed.entries)} articles to '{filename}'")
-
-    except Exception as e:
-        print(f"❌ Error: {e}")
+# for headline, paragraph in zip(news_headline[1:], news_paragraph):
+#     print("Headline:", headline.text)
+#     print("Paragraph:", paragraph.text)
+#     print()
 
 
-if __name__ == "__main__":
-    scrape_toi_rss()
+news = datetime.now().strftime("TOI_News_%Y-%m-%d_%H-%M-%S.txt")
+
+with open(news, "w", encoding="utf-8") as file:
+    file.write(f"TOI News Scraped on {datetime.now()}\n")
+    file.write("=" * 80 + "\n\n")
+
+    for headline, paragraph in zip(news_headline[1:], news_paragraph):
+        file.write(f"Headline: {headline.text}.\n")
+        file.write(f"Paragraph: {paragraph.text}\n")
+        file.write("-" * (len(paragraph.text)+11) + "\n")
